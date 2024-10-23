@@ -130,9 +130,8 @@ resource "aws_instance" "ubuntu_server" {
   key_name      = aws_key_pair.pin.key_name
   subnet_id     = aws_subnet.public_subnet.id  # Asociar la instancia a la subred pública
 
-  security_groups = [
-    aws_security_group.allow_ssh_http.name
-  ]
+  # Cambiado a vpc_security_group_ids
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
 
   user_data = data.template_file.user_data.rendered
 
