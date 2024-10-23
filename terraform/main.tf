@@ -28,6 +28,8 @@ resource "aws_subnet" "public_subnet" {
   cidr_block = "10.0.1.0/24"
   availability_zone = "us-east-1a"
 
+  map_public_ip_on_launch = true  # Habilitar asignación automática de IP públicas
+
   tags = {
     Name = "PublicSubnet"
   }
@@ -132,6 +134,9 @@ resource "aws_instance" "ubuntu_server" {
 
   # Cambiado a vpc_security_group_ids
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+
+  # Habilitar asignación de IP pública
+  associate_public_ip_address = true
 
   user_data = data.template_file.user_data.rendered
 
