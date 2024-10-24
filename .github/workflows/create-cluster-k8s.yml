@@ -42,6 +42,10 @@ jobs:
         # Actualizar el sistema
         sudo apt-get update -y
 
+        # Instalar eksctl
+        curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/v0.137.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
+        sudo mv /tmp/eksctl /usr/local/bin
+
         # Crear un clúster EKS
         eksctl create cluster --name eks-mundos-e --region us-east-1 --node-type t3.small --nodes 3 --with-oidc --managed --full-ecr-access --zones us-east-1a,us-east-1b,us-east-1c
 
