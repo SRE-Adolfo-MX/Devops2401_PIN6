@@ -30,12 +30,12 @@ jobs:
       - name: Configure kubectl for EKS
         id: configure_kubectl
         run: |
-          aws eks update-kubeconfig --name <EKS_CLUSTER_NAME> --region us-east-1
+          aws eks update-kubeconfig --name eks-mundos-e --region us-east-1
 
       - name: Delete Prometheus and Grafana with Helm
         run: |
-          helm delete prometheus --namespace prometheus
-          helm delete grafana --namespace grafana
+          helm delete prometheus --namespace prometheus || echo "Prometheus release not found"
+          helm delete grafana --namespace grafana || echo "Grafana release not found"
 
       - name: Await Manual Approval for Destroy
         uses: trstringer/manual-approval@v1
@@ -55,3 +55,7 @@ jobs:
         if: ${{ success() }}  
         working-directory: terraform/
         run: terraform destroy -auto-approve
+
+      - name: Delete EKS Cluster
+        run: |
+          eksctl delete cluster --name eks-mundos-e --region us-east-1
