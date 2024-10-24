@@ -23,7 +23,7 @@ jobs:
       id: get_ec2_ip
       run: |
         EC2_IP=$(aws ec2 describe-instances \
-          --filters "Name=tag:Name,Values=ubuntu-server" \
+          --filters "Name=tag:Name,Values=ubuntu_server_terraform" \
           --query 'Reservations[*].Instances[*].PublicIpAddress' \
           --output text)
         echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV  # Almacenar IP en variable de entorno
