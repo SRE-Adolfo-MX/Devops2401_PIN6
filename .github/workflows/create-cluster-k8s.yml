@@ -50,8 +50,28 @@ jobs:
         curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/v0.137.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
         sudo mv /tmp/eksctl /usr/local/bin
 
-        # Crear un clúster EKS usando las credenciales proporcionadas
+        # Crear un clúster EKS
         eksctl create cluster --name eks-mundos-e --region us-east-1 --node-type t3.small --nodes 3 --with-oidc --managed --full-ecr-access --zones us-east-1a,us-east-1b,us-east-1c
+        
+        # Esperar hasta que el clúster esté disponible
+        echo "Waiting for the cluster to be created..."
+        MAX_RETRIES=30
+        for i in $(seq 1 $MAX_RETRIES); do
+          STATUS=$(aws eks describe-cluster --name eks-mundos-e --query 'cluster.status' --output text)
+          echo "Cluster status: $STATUS"
+          if [ "$STATUS" == "ACTIVE" ]; then
+            echo "Cluster is ACTIVE"
+            break
+          fi
+          echo "Cluster is not ready yet. Waiting..."
+          sleep 30
+        done
+        
+        # Check if the cluster is active
+        if [ "$STATUS" != "ACTIVE" ]; then
+          echo "Cluster did not become active in time. Exiting."
+          exit 1
+        fi
 
         # Added csi volumes
         eksctl create addon --name aws-ebs-csi-driver --cluster eks-mundos-e --region us-east-1
