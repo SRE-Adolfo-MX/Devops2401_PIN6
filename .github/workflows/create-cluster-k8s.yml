@@ -19,9 +19,19 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+    - name: Get EC2 Public IP
+      id: get_ec2_ip
+      run: |
+        EC2_IP=$(aws ec2 describe-instances \
+          --filters "Name=tag:Name,Values=ubuntu-server" \
+          --query 'Reservations[*].Instances[*].PublicIpAddress' \
+          --output text)
+        echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV  # Almacenar IP en variable de entorno
+
+
     - name: Connect to EC2 and set up EKS
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ubuntu@$EC2_IP << 'EOF'
         # Actualizar el sistema
         sudo apt-get update -y
 
