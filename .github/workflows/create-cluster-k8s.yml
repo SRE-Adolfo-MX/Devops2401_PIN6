@@ -2,7 +2,7 @@ name: Deploy EKS Cluster and Install Monitoring
 
 on:
   workflow_run:
-    workflows: ["Deploy Terraform to AWS"]
+    workflows: ["Apply Terraform to AWS"]
     types:
       - completed
 
