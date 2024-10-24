@@ -8,11 +8,6 @@ resource "tls_private_key" "ssh_key" {
   rsa_bits  = 4096
 }
 
-resource "aws_key_pair" "pin" {
-  key_name   = "pin"
-  public_key = tls_private_key.ssh_key.public_key_openssh
-}
-
 # Crear una VPC
 resource "aws_vpc" "main_vpc" {
   cidr_block = "10.0.0.0/16"
@@ -129,7 +124,7 @@ EOF
 resource "aws_instance" "ubuntu_server" {
   ami           = "ami-042e8287309f5df03" # Ubuntu Server 22.04 LTS para us-east-1
   instance_type = "t2.micro"
-  key_name      = aws_key_pair.pin.key_name
+  key_name      = "pin_Devops2401"
   subnet_id     = aws_subnet.public_subnet.id  # Asociar la instancia a la subred pública
 
   # Cambiado a vpc_security_group_ids

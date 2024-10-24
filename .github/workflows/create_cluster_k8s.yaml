@@ -1,0 +1,72 @@
+name: Deploy EKS Cluster and Install Monitoring
+
+on:
+  workflow_run:
+    workflows: ["Deploy Terraform to AWS"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: Connect to EC2 and set up EKS
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+        # Actualizar el sistema
+        sudo apt-get update -y
+
+        # Instalar AWS CLI
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+
+        # Configurar AWS CLI con las credenciales
+        aws configure set aws_access_key_id ${{ secrets.AWS_KEY }}
+        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
+        aws configure set region us-east-1
+
+        # Instalar kubectl
+        sudo apt-get install -y apt-transport-https ca-certificates curl
+        sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+        sudo apt-get update
+        sudo apt-get install -y kubectl
+
+        # Instalar eksctl
+        curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/v0.137.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
+        sudo mv /tmp/eksctl /usr/local/bin
+
+        # Crear un clúster EKS
+        eksctl create cluster --name eks-mundos-e --region us-east-1 --node-type t3.small --nodes 3 --with-oidc --managed --full-ecr-access --zones us-east-1a,us-east-1b,us-east-1c
+
+        # Added csi volumes
+        eksctl create addon --name aws-ebs-csi-driver --cluster eks-mundos-e --region us-east-1
+
+        # Instalar Helm
+        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+        
+        # Añadir el repositorio de prometheus y grafana
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm repo update
+
+        # Instalar Prometheus
+        helm install prometheus prometheus-community/prometheus --namespace prometheus --create-namespace --set alertmanager.persistentVolume.storageClass="gp2" --set server.persistentVolume.storageClass="gp2"
+
+        # Instalar Grafana
+        helm install grafana grafana/grafana --namespace grafana  --create-namespace --set persistence.storageClassName="gp2" --set persistence.enabled=true --set adminPassword='EKS!sAWSome' --set service.type=LoadBalancer
+
+        EOF
+
+    - name: Finish
+      run: echo "EKS Cluster created and Prometheus/Grafana installed"

@@ -1,12 +1,12 @@
-name: Deploy Terraform to AWS
+name: Apply Terraform to AWS
 
 on:
   push:
     branches:
-      - master  
+      - master
 
 jobs:
-  terraform:
+  terraform_apply:
     name: Apply Terraform
     runs-on: ubuntu-latest
 
@@ -14,12 +14,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.0  
-
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -31,7 +29,6 @@ jobs:
       - name: Terraform Init
         working-directory: terraform/
         run: terraform init
-
 
       - name: Terraform Plan
         working-directory: terraform/
@@ -51,46 +48,3 @@ jobs:
         if: ${{ success() }}  
         working-directory: terraform/
         run: terraform apply -auto-approve
-
-  destroy:
-    name: Destroy Terraform Resources
-    runs-on: ubuntu-latest
-    needs: terraform
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
-
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          aws-region: us-east-1
-
-
-      - name: Await Manual Approval for Destroy
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: "SRE-Adolfo-MX"
-          minimum-approvals: 1  
-          issue-title: "Approval needed: Destroy Terraform Resources"
-          issue-body: "Please approve or deny the destruction of Terraform-managed resources in the AWS environment."
-          exclude-workflow-initiator-as-approver: false
-
-      - name: Terraform Init
-        working-directory: terraform/
-        run: terraform init
-
-      - name: Terraform Destroy
-        if: ${{ success() }}  
-        working-directory: terraform/
-        run: terraform destroy -auto-approve
