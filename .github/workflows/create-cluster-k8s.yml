@@ -19,6 +19,14 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+    - name: Install aws-cli v2
+      run: |
+        # Descargar e instalar la última versión de aws-cli v2
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install -i /usr/local/aws-cli -b /usr/local/bin
+        aws --version
+
     - name: Configure AWS CLI
       run: |
         # Configurar AWS CLI con las credenciales
@@ -47,6 +55,12 @@ jobs:
         # Actualizar el sistema
         sudo apt-get update -y
 
+        # Instalar aws-cli v2 en la instancia EC2
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install -i /usr/local/aws-cli -b /usr/local/bin
+        aws --version
+
         # Instalar eksctl
         curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/v0.137.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
         sudo mv /tmp/eksctl /usr/local/bin
@@ -68,18 +82,19 @@ jobs:
           sleep 30
         done
         
-        # Check if the cluster is active
+        # Verifica si el clúster está activo
         if [ "$STATUS" != "ACTIVE" ]; then
           echo "Cluster did not become active in time. Exiting."
           exit 1
         fi
 
-        # Added csi volumes
+        # Agregar el complemento CSI EBS
         eksctl create addon --name aws-ebs-csi-driver --cluster eks-mundos-e --region us-east-1
 
+        # Configurar el archivo kubeconfig
         aws eks update-kubeconfig --name eks-mundos-e --region us-east-1
 
-        # Añadir el repositorio de prometheus y grafana
+        # Añadir los repositorios de Helm para Prometheus y Grafana
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
         helm repo add grafana https://grafana.github.io/helm-charts
         helm repo update
@@ -88,7 +103,7 @@ jobs:
         helm install prometheus prometheus-community/prometheus --namespace prometheus --create-namespace --set alertmanager.persistentVolume.storageClass="gp2" --set server.persistentVolume.storageClass="gp2"
 
         # Instalar Grafana
-        helm install grafana grafana/grafana --namespace grafana  --create-namespace --set persistence.storageClassName="gp2" --set persistence.enabled=true --set adminPassword='EKS!sAWSome' --set service.type=LoadBalancer
+        helm install grafana grafana/grafana --namespace grafana --create-namespace --set persistence.storageClassName="gp2" --set persistence.enabled=true --set adminPassword='EKS!sAWSome' --set service.type=LoadBalancer
 
         EOF
 
