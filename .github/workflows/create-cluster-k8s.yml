@@ -19,14 +19,6 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    - name: Install aws-cli v2
-      run: |
-        # Descargar e instalar la última versión de aws-cli v2
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install -i /usr/local/aws-cli -b /usr/local/bin
-        aws --version
-
     - name: Configure AWS CLI
       run: |
         # Configurar AWS CLI con las credenciales
@@ -51,19 +43,6 @@ jobs:
         export AWS_ACCESS_KEY_ID="${{ secrets.AWS_KEY }}"
         export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_KEY }}"
         export AWS_REGION="us-east-1"
-
-        # Actualizar el sistema
-        sudo apt-get update -y
-
-        # Instalar aws-cli v2 en la instancia EC2
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install -i /usr/local/aws-cli -b /usr/local/bin
-        aws --version
-
-        # Instalar eksctl
-        curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/v0.137.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
-        sudo mv /tmp/eksctl /usr/local/bin
 
         # Crear un clúster EKS
         eksctl create cluster --name eks-mundos-e --region us-east-1 --node-type t3.small --nodes 3 --with-oidc --managed --full-ecr-access --zones us-east-1a,us-east-1b,us-east-1c
@@ -104,7 +83,24 @@ jobs:
 
         # Instalar Grafana
         helm install grafana grafana/grafana --namespace grafana --create-namespace --set persistence.storageClassName="gp2" --set persistence.enabled=true --set adminPassword='EKS!sAWSome' --set service.type=LoadBalancer
-
+       
+        # Configurar Prometheus como fuente de datos en Grafana
+        kubectl apply -f - <<YAML
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: grafana-datasource
+          namespace: grafana
+        data:
+          prometheus.yaml: |
+            apiVersion: 1
+            datasources:
+            - name: Prometheus
+              type: prometheus
+              access: proxy
+              url: http://prometheus-server.prometheus.svc.cluster.local
+              isDefault: true
+        YAML
         EOF
 
     - name: Finish
