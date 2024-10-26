@@ -27,6 +27,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
           aws-region: us-east-1
 
+      - name: Await Manual Approval for Destroy
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: "SRE-Adolfo-MX"
+          minimum-approvals: 1  
+          issue-title: "Approval needed: Destroy Terraform Resources"
+          issue-body: "Please approve or deny the destruction of Terraform-managed resources in the AWS environment."
+          exclude-workflow-initiator-as-approver: false
 
       - name: Install eksctl
         run: |
@@ -46,16 +55,6 @@ jobs:
         run: |
           helm delete prometheus --namespace prometheus || echo "Prometheus release not found"
           helm delete grafana --namespace grafana || echo "Grafana release not found"
-
-      - name: Await Manual Approval for Destroy
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: "SRE-Adolfo-MX"
-          minimum-approvals: 1  
-          issue-title: "Approval needed: Destroy Terraform Resources"
-          issue-body: "Please approve or deny the destruction of Terraform-managed resources in the AWS environment."
-          exclude-workflow-initiator-as-approver: false
 
       - name: Terraform Init
         working-directory: terraform/
