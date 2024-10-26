@@ -97,8 +97,8 @@ jobs:
           namespace: grafana
           labels:
             grafana_datasource: "1"  # Sidecar label to detect datasource
-        data:
-          prometheus.yaml: |
+        datasources:
+          datasource.yaml:
             apiVersion: 1
             datasources:
             - name: Prometheus
