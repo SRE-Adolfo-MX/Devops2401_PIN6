@@ -89,12 +89,14 @@ jobs:
         helm install grafana grafana/grafana --namespace grafana --create-namespace --set persistence.storageClassName="gp2" --set persistence.enabled=true --set adminPassword='EKS!sAWSome' --set service.type=LoadBalancer
        
         # Configurar Prometheus como fuente de datos en Grafana
-        kubectl apply -f - <<YAML
+        kubectl apply -f - << 'YAML'
         apiVersion: v1
         kind: ConfigMap
         metadata:
           name: grafana-datasource
           namespace: grafana
+          labels:
+            grafana_datasource: "1"  # Sidecar label to detect datasource
         data:
           prometheus.yaml: |
             apiVersion: 1
