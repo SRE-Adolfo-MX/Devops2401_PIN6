@@ -96,16 +96,16 @@ jobs:
           name: grafana-datasource
           namespace: grafana
           labels:
-            grafana_datasource: "1"  # Sidecar label to detect datasource
+            grafana_datasource: "1"  # Etiqueta para que Grafana detecte la fuente de datos
         data:
-          datasource.yaml:
+          datasource.yaml: |
             apiVersion: 1
             datasources:
-            - name: Prometheus
-              type: prometheus
-              access: proxy
-              url: http://prometheus-server.prometheus.svc.cluster.local
-              isDefault: true
+              - name: Prometheus
+                type: prometheus
+                access: proxy
+                url: http://prometheus-server.prometheus.svc.cluster.local
+                isDefault: true
         YAML
         EOF
 
